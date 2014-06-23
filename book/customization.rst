@@ -321,7 +321,7 @@ Apply these changes by running the ``oro:migration:load`` command:
 
 This command updates the ``oro_entity_config`` and ``oro_user`` tables. Additionally,
 each time the cache is generated, corresponding entity and mapping files are
-created in the ``app/cache:
+created in the ``app/cache``:
 
 .. code-block:: bash
 
@@ -505,6 +505,80 @@ the ``oro:migration:load`` command.
 
     Read more about Doctrine mappings `in the Symfony Book`_ and in the
     `official Doctrine documentation`_.
+
+
+Calculating Entity Values
+-------------------------
+
+You can create a service to calculate entity values. For example, imagine
+that the users of your application are accounted based on the number of months
+they used your service during the last year. The longer your user uses the
+service the lower is the fee he is charged with per month:
+
+====================== =====================
+Service used in months Service fee per month
+====================== =====================
+1 - 4                  20 $
+---------------------- ---------------------
+5 - 8                  15 $
+---------------------- ---------------------
+9 - 12                 10 $
+====================== =====================
+
+The user's account entity class looks like this::
+
+    // src/Acme/DemoBundle/Entity/Account.php
+    namespace Acme\DemoBundle\Entity;
+
+    class Account
+    {
+        private $monthsUsed;
+
+        private $totalFee;
+
+        public function setMonthsUsed($monthsUsed)
+        {
+            $this->monthUsed = $monthsUsed;
+        }
+
+        public function getMonthsUsed()
+        {
+            return $this->monthsUsed;
+        }
+
+        public function setTotalFee($totalFee)
+        {
+            $this->totalFee = $totalFee;
+        }
+
+        public function getTotalFee()
+        {
+            return $this->totalFee;
+        }
+    }
+
+Your fee calculator may now look like this::
+
+    // src/Acme/DemoBundle/Accounting/TotalFeeCalculator.php
+    namespace Acme\DemoBundle\Accounting;
+
+    use Acme\DemoBundle\Entity\Account;
+
+    class TotalFeeCalculator
+    {
+        public function calculateTotalFee(Account $account)
+        {
+            if ($account->getMonthsUsed() === 0) {
+                $account->setTotalFee(0);
+            } elseif ($account->getMonthsUsed() >= 1 && $account->getMonthsUsed() < 5) {
+                $account->setTotalFee(20);
+            } elseif ($account->getMonthsUsed() >= 5 && $account->getMonthsUsed() < 10) {
+                $account->setTotalFee(15);
+            } elseif ($account->getMonthsUsed() >= 10) {
+                $account->setTotalFee(10);
+            }
+        }
+    }
 
 Learn more
 ----------
